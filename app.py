@@ -25,6 +25,12 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 
+# Make `now` available in every template automatically
+@app.context_processor
+def inject_now():
+    return {"now": datetime.now()}
+
+
 def init():
     init_db()
 
