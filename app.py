@@ -507,5 +507,7 @@ def commission():
 
 if __name__ == "__main__":
     init()
-    print("\n  Loan BizDev App running → http://localhost:5000\n")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("RAILWAY_ENVIRONMENT") is None  # debug off in production
+    print(f"\n  Loan BizDev App running → http://localhost:{port}\n")
+    app.run(host="0.0.0.0", port=port, debug=debug)
