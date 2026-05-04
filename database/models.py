@@ -67,9 +67,11 @@ def init_db():
             template_name TEXT,
             subject TEXT,
             body TEXT,
-            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            opened INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'draft',
+            sent_at TIMESTAMP,
             replied INTEGER DEFAULT 0,
+            reply_body TEXT,
+            reply_received_at TIMESTAMP,
             FOREIGN KEY (contact_id) REFERENCES contacts(id)
         )
     """)

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Contacts{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Contacts</h4>
+  <div class="ms-auto d-flex gap-2">
+    <!-- CSV Import -->
+    <form action="/contacts/import" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+      <input type="file" name="csv_file" accept=".csv" class="form-control form-control-sm" style="width:200px;">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload me-1"></i>Import CSV</button>
+    </form>
+    <a href="/contacts/add" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Contact</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <a href="/contacts" class="btn btn-sm {% if not status_filter %}btn-secondary{% else %}btn-outline-secondary{% endif %}">All</a>
+  {% for s in statuses %}
+  <a href="/contacts?status={{ s }}"
+     class="btn btn-sm {% if status_filter == s %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+    {{ s.replace('_',' ').title() }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Search -->
+<form class="mb-3" method="get" action="/contacts">
+  <div class="input-group" style="max-width:360px;">
+    <input type="text" name="q" class="form-control form-control-sm" placeholder="Search name, company, email…" value="{{ query }}">
+    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Company</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Industry</th>
+          <th>Prev Loan</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contacts %}
+        <tr>
+          <td><a href="/contacts/{{ c.id }}" class="text-decoration-none fw-bold">{{ c.name }}</a></td>
+          <td>{{ c.company or '—' }}</td>
+          <td>{{ c.phone or '—' }}</td>
+          <td><a href="mailto:{{ c.email }}" class="text-muted" style="font-size:.85rem;">{{ c.email or '—' }}</a></td>
+          <td>{{ c.industry or '—' }}</td>
+          <td>${{ '{:,.0f}'.format(c.prev_loan_amount or 0) }}</td>
+          <td><span class="pipeline-badge stage-{{ c.status }}">{{ c.status.replace('_',' ').title() }}</span></td>
+          <td class="text-end">
+            <a href="/emails/compose?contact_id={{ c.id }}" class="btn btn-sm btn-outline-primary" title="Compose email"><i class="bi bi-envelope"></i></a>
+            <a href="/contacts/{{ c.id }}" class="btn btn-sm btn-outline-secondary" title="View"><i class="bi bi-chevron-right"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No contacts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">Good {{ 'morning' if now.hour < 12 else ('afternoon' if now.hour < 17 else 'evening') }}, {{ your_name }} 👋</h4>
+    <div class="text-muted" style="font-size:.85rem;">{{ now.strftime('%A, %B %d %Y') }}</div>
+  </div>
+  <div class="ms-auto">
+    <a href="/emails/compose" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Compose Email</a>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">This Week</div>
+      <div class="value {% if weekly_deals >= weekly_goal %}text-success{% elif weekly_deals > 0 %}text-warning{% else %}text-danger{% endif %}">
+        {{ weekly_deals }}<span style="font-size:1rem;font-weight:400;color:#8b949e;">/{{ weekly_goal }}</span>
+      </div>
+      <div class="text-muted mt-1" style="font-size:.8rem;">Deals closed</div>
+      <div class="progress mt-2">
+        <div class="progress-bar {% if weekly_deals >= weekly_goal %}bg-success{% else %}bg-warning{% endif %}"
+             style="width:{{ [weekly_deals/weekly_goal*100, 100]|min }}%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">Week Commission</div>
+      <div class="value text-success">${{ '{:,.0f}'.format(week_commission) }}</div>
+      <div class="text-muted mt-1" style="font-size:.8rem;">Earned this week</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">Reply Rate</div>
+      <div class="value text-info">{{ reply_rate }}%</div>
+      <div class="text-muted mt-1" style="font-size:.8rem;">{{ total_replied }} of {{ total_sent }} emails</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">YTD Commission</div>
+      <div class="value text-success">${{ '{:,.0f}'.format(ytd.total_commission) }}</div>
+      <div class="text-muted mt-1" style="font-size:.8rem;">{{ ytd.deal_count }} deals · ${{ '{:,.0f}'.format(ytd.total_loan_volume) }} volume</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Email Status -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-envelope me-2"></i>Email Status</span>
+        <a href="/emails" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-3">
+          <div class="text-center">
+            <div class="fw-bold text-info fs-4">{{ total_drafts }}</div>
+            <div class="text-muted" style="font-size:.8rem;">Drafts</div>
+          </div>
+          <div class="text-center">
+            <div class="fw-bold text-warning fs-4">{{ total_sent - total_replied }}</div>
+            <div class="text-muted" style="font-size:.8rem;">Awaiting Reply</div>
+          </div>
+          <div class="text-center">
+            <div class="fw-bold text-success fs-4">{{ total_replied }}</div>
+            <div class="text-muted" style="font-size:.8rem;">Replied</div>
+          </div>
+        </div>
+        {% if total_drafts > 0 %}
+        <a href="/emails?tab=drafts" class="btn btn-sm btn-primary w-100 mt-1">
+          <i class="bi bi-send me-1"></i>Review {{ total_drafts }} Draft(s)
+        </a>
+        {% endif %}
+        <form action="/emails/check-replies" method="post" class="mt-2">
+          <button class="btn btn-sm btn-outline-info w-100"><i class="bi bi-arrow-repeat me-1"></i>Check for Replies</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Summary -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-funnel me-2"></i>Pipeline</span>
+        <a href="/deals" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for stage in ['prospect','contacted','interested','proposal_sent','negotiating','closed_won','closed_lost'] %}
+            {% set data = pipeline.get(stage, {'count':0,'total_value':0}) %}
+            {% if data.count > 0 %}
+            <tr>
+              <td><span class="pipeline-badge stage-{{ stage }}">{{ stage.replace('_',' ').title() }}</span></td>
+              <td class="text-end fw-bold">{{ data.count }}</td>
+              <td class="text-end text-muted" style="font-size:.8rem;">${{ '{:,.0f}'.format(data.total_value) }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-ups Due -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header {% if followups %}text-danger{% endif %}">
+        <i class="bi bi-bell me-2"></i>Follow-ups Due
+        {% if followups %}<span class="badge bg-danger ms-2">{{ followups|length }}</span>{% endif %}
+      </div>
+      <div class="card-body p-0" style="max-height:220px;overflow-y:auto;">
+        {% if followups %}
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for f in followups %}
+            <tr>
+              <td>
+                <a href="/contacts/{{ f.contact_id }}" class="text-decoration-none fw-bold">{{ f.contact_name }}</a>
+                <div class="text-muted" style="font-size:.75rem;">{{ f.follow_up_type }} · {{ f.scheduled_date }}</div>
+              </td>
+              <td class="text-end">
+                <form action="/followups/{{ f.id }}/done" method="post" class="d-inline">
+                  <button class="btn btn-sm btn-outline-success"><i class="bi bi-check"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-muted text-center"><i class="bi bi-check-circle text-success me-1"></i>All caught up!</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

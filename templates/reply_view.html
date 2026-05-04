@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Reply from {{ log.contact_name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-check-circle-fill text-success me-2"></i>Reply from {{ log.contact_name }}</h4>
+  <a href="/emails" class="btn btn-outline-secondary btn-sm ms-auto">← Back</a>
+</div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Your Original Email</div>
+      <div class="card-body">
+        <div class="mb-2"><strong>Subject:</strong> {{ log.subject }}</div>
+        <div class="reply-preview">{{ log.body }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card" style="border-color:#3fb950;">
+      <div class="card-header text-success">Their Reply</div>
+      <div class="card-body">
+        <div class="mb-2">
+          <strong>From:</strong> {{ log.contact_name }} &lt;{{ log.contact_email }}&gt;<br>
+          {% if log.reply_received_at %}
+          <strong>Received:</strong> {{ log.reply_received_at[:16] }}
+          {% endif %}
+        </div>
+        <div class="reply-preview" style="max-height:400px;">{{ log.reply_body or 'No reply body captured.' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="mt-3">
+  <a href="/contacts/{{ log.contact_id }}" class="btn btn-outline-primary">View Contact →</a>
+  <a href="/emails/compose?contact_id={{ log.contact_id }}&template=proposal" class="btn btn-primary ms-2">
+    <i class="bi bi-file-earmark-text me-1"></i>Send Proposal
+  </a>
+</div>
+{% endblock %}

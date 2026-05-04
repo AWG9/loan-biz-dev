@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Edit Draft{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <h4 class="fw-bold mb-0">Edit Draft → {{ draft.contact_name }}</h4>
+  <a href="/emails?tab=drafts" class="btn btn-outline-secondary btn-sm ms-auto">← Back to Drafts</a>
+</div>
+<div class="card" style="max-width:680px;">
+  <div class="card-body">
+    <div class="mb-3 text-muted" style="font-size:.85rem;">
+      <i class="bi bi-envelope me-1"></i>To: <strong>{{ draft.contact_name }}</strong> &lt;{{ draft.contact_email }}&gt;
+    </div>
+    <form action="/emails/draft/{{ draft.id }}/edit" method="post">
+      <div class="mb-3">
+        <label class="form-label">Subject</label>
+        <input type="text" name="subject" class="form-control" value="{{ draft.subject }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Body</label>
+        <textarea name="body" class="form-control" rows="18" style="font-family:monospace;font-size:.85rem;" required>{{ draft.body }}</textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-outline-secondary">Save Changes</button>
+        <a href="/emails?tab=drafts" class="btn btn-outline-secondary">Cancel</a>
+        <form action="/emails/draft/{{ draft.id }}/send" method="post" class="ms-auto">
+          <button class="btn btn-primary"><i class="bi bi-send me-1"></i>Save & Send Now</button>
+        </form>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

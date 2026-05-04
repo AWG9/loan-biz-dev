@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Compose{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i>Compose Email</h4>
+  <a href="/emails?tab=drafts" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-inbox me-1"></i>Draft Queue</a>
+</div>
+
+<div class="row g-4">
+  <!-- LEFT: Compose form -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">Draft Email</div>
+      <div class="card-body">
+        <form action="/emails/draft" method="post" id="composeForm">
+          <div class="mb-3">
+            <label class="form-label text-muted">Contact</label>
+            <select name="contact_id" id="contactSelect" class="form-select" required>
+              <option value="">— Select a contact —</option>
+              {% for c in contacts %}
+              <option value="{{ c.id }}" {% if contact and c.id == contact.id %}selected{% endif %}>
+                {{ c.name }} — {{ c.company or 'No company' }} ({{ c.email or 'no email' }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted">Template</label>
+            <select name="template_name" id="templateSelect" class="form-select">
+              {% for t in templates %}
+              <option value="{{ t }}" {% if t == template_name %}selected{% endif %}>
+                {{ t.replace('_', ' ').title() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted">Subject</label>
+            <input type="text" name="subject" id="subjectField" class="form-control" value="{{ subject }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted">Body</label>
+            <textarea name="body" id="bodyField" class="form-control" rows="14" style="font-family:monospace;font-size:.85rem;" required>{{ body }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-inbox me-1"></i>Save to Draft Queue</button>
+            <button type="button" class="btn btn-outline-secondary" id="previewBtn"><i class="bi bi-eye me-1"></i>Preview Template</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Contact research panel -->
+  <div class="col-md-5">
+    <div class="card mb-3" id="contactPanel" {% if not contact %}style="display:none"{% endif %}>
+      <div class="card-header"><i class="bi bi-person-circle me-2"></i>Contact Research</div>
+      <div class="card-body" id="contactInfo">
+        {% if contact %}
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">NAME</span><br><strong>{{ contact.name }}</strong></div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">COMPANY</span><br>{{ contact.company or '—' }}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">INDUSTRY</span><br>{{ contact.industry or '—' }}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">PHONE</span><br>{{ contact.phone or '—' }}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">PREV LOAN</span><br>${{ '{:,.0f}'.format(contact.prev_loan_amount or 0) }}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">STATUS</span><br><span class="pipeline-badge stage-{{ contact.status }}">{{ contact.status }}</span></div>
+        {% if contact.notes %}<div class="mb-2"><span class="text-muted" style="font-size:.8rem;">NOTES</span><br>{{ contact.notes }}</div>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-lightbulb me-2"></i>Tips for this Template</div>
+      <div class="card-body" id="tipPanel" style="font-size:.85rem;color:#8b949e;">
+        <div id="tip-initial_outreach">
+          <strong class="text-warning">Initial Outreach</strong><br>
+          Best sent Tue–Thu, 9–11am. Mention their previous loan amount to show you know them.
+          Keep the subject line short and curiosity-driven.
+        </div>
+        <div id="tip-follow_up_1" style="display:none">
+          <strong class="text-warning">Follow-Up 1</strong><br>
+          Wait 3–5 days after initial. Reference your last email briefly.
+          Add urgency without pressure — mention limited availability.
+        </div>
+        <div id="tip-follow_up_2" style="display:none">
+          <strong class="text-warning">Follow-Up 2 (Final)</strong><br>
+          Last touch. Keep it short and gracious.
+          Leave the door open — many deals come from "last chance" emails.
+        </div>
+        <div id="tip-proposal" style="display:none">
+          <strong class="text-warning">Proposal</strong><br>
+          Fill in the loan amount and monthly payment before sending.
+          Confirm numbers verbally first if possible. Clear next steps = faster close.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const contactSelect = document.getElementById('contactSelect');
+const templateSelect = document.getElementById('templateSelect');
+const subjectField = document.getElementById('subjectField');
+const bodyField = document.getElementById('bodyField');
+const contactPanel = document.getElementById('contactPanel');
+const contactInfo = document.getElementById('contactInfo');
+
+function updateTips(tmpl) {
+  document.querySelectorAll('[id^="tip-"]').forEach(el => el.style.display = 'none');
+  const tip = document.getElementById('tip-' + tmpl);
+  if (tip) tip.style.display = 'block';
+}
+
+function loadPreview() {
+  const cid = contactSelect.value;
+  const tmpl = templateSelect.value;
+  updateTips(tmpl);
+  if (!cid || !tmpl) return;
+  fetch(`/api/preview-template?contact_id=${cid}&template=${tmpl}`)
+    .then(r => r.json())
+    .then(data => {
+      subjectField.value = data.subject;
+      bodyField.value = data.body;
+    });
+  // Load contact info
+  fetch(`/api/contact-info/${cid}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(c => {
+      if (!c) return;
+      contactPanel.style.display = '';
+      contactInfo.innerHTML = `
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">NAME</span><br><strong>${c.name}</strong></div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">COMPANY</span><br>${c.company||'—'}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">INDUSTRY</span><br>${c.industry||'—'}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">PHONE</span><br>${c.phone||'—'}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">PREV LOAN</span><br>$${Number(c.prev_loan_amount||0).toLocaleString()}</div>
+        <div class="mb-2"><span class="text-muted" style="font-size:.8rem;">NOTES</span><br>${c.notes||'—'}</div>
+      `;
+    });
+}
+
+contactSelect.addEventListener('change', loadPreview);
+templateSelect.addEventListener('change', loadPreview);
+document.getElementById('previewBtn').addEventListener('click', loadPreview);
+updateTips(templateSelect.value);
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Commission{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-4"><i class="bi bi-cash-stack me-2"></i>Commission Tracker</h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">{{ now.strftime('%B') }} Deals</div>
+      <div class="value">{{ month.deal_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">{{ now.strftime('%B') }} Volume</div>
+      <div class="value">${{ '{:,.0f}'.format(month.total_loan_volume) }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">{{ now.strftime('%B') }} Earned</div>
+      <div class="value text-success">${{ '{:,.2f}'.format(month.total_commission) }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="label">{{ now.year }} YTD</div>
+      <div class="value text-success">${{ '{:,.2f}'.format(ytd.total_commission) }}</div>
+      <div class="text-muted mt-1" style="font-size:.8rem;">{{ ytd.deal_count }} deals · ${{ '{:,.0f}'.format(ytd.total_loan_volume) }}</div>
+    </div>
+  </div>
+</div>
+
+{% if month.deals %}
+<div class="card mb-4">
+  <div class="card-header">{{ now.strftime('%B %Y') }} Deals</div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead><tr><th>Contact</th><th>Company</th><th>Loan</th><th>Rate</th><th>Commission</th><th>Closed</th></tr></thead>
+      <tbody>
+        {% for d in month.deals %}
+        <tr>
+          <td><a href="/contacts/{{ d.contact_id }}" class="text-decoration-none fw-bold">{{ d.contact_name }}</a></td>
+          <td>{{ d.company }}</td>
+          <td>${{ '{:,.0f}'.format(d.loan_amount) }}</td>
+          <td>{{ '{:.1f}'.format(d.interest_rate*100) }}%</td>
+          <td class="text-success fw-bold">${{ '{:,.2f}'.format(d.commission) }}</td>
+          <td style="font-size:.8rem;">{{ d.closed_at[:10] if d.closed_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if breakdown %}
+<div class="card">
+  <div class="card-header">{{ now.year }} Monthly Breakdown</div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead><tr><th>Month</th><th>Deals</th><th>Volume</th><th>Commission</th></tr></thead>
+      <tbody>
+        {% for row in breakdown %}
+        <tr>
+          <td class="fw-bold">{{ row.month_name }}</td>
+          <td>{{ row.deals }}</td>
+          <td>${{ '{:,.0f}'.format(row.volume or 0) }}</td>
+          <td class="text-success fw-bold">${{ '{:,.2f}'.format(row.commission or 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

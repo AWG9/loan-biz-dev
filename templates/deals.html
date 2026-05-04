@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Deals{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-briefcase me-2"></i>Deal Pipeline</h4>
+</div>
+
+<!-- Pipeline Summary -->
+<div class="row g-2 mb-4">
+  {% for stage in stages %}
+  {% set data = pipeline.get(stage, {'count':0,'total_value':0}) %}
+  <div class="col">
+    <div class="stat-card text-center p-2">
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#8b949e;">{{ stage.replace('_',' ').title() }}</div>
+      <div class="fw-bold fs-5">{{ data.count }}</div>
+      <div style="font-size:.75rem;color:#8b949e;">${{ '{:,.0f}'.format(data.total_value) }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- All Deals Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Contact</th>
+          <th>Loan Amount</th>
+          <th>Rate</th>
+          <th>Term</th>
+          <th>Commission</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in deals %}
+        <tr>
+          <td>
+            <a href="/contacts/{{ d.contact_id }}" class="text-decoration-none fw-bold">{{ d.contact_name }}</a>
+            <div class="text-muted" style="font-size:.78rem;">{{ d.company }}</div>
+          </td>
+          <td class="fw-bold">${{ '{:,.0f}'.format(d.loan_amount) }}</td>
+          <td>{{ '{:.1f}'.format(d.interest_rate*100) }}%</td>
+          <td>{{ d.term_months }}mo</td>
+          <td class="text-success fw-bold">${{ '{:,.2f}'.format(d.loan_amount * d.commission_rate) }}</td>
+          <td>
+            <form action="/deals/{{ d.id }}/status" method="post">
+              <select name="status" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto;">
+                {% for s in stages %}
+                <option value="{{ s }}" {% if s == d.status %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td style="font-size:.8rem;">{{ d.created_at[:10] }}</td>
+          <td>
+            {% if d.status not in ['closed_won','closed_lost'] %}
+            <form action="/deals/{{ d.id }}/close" method="post" class="d-inline">
+              <input type="hidden" name="won" value="true">
+              <button class="btn btn-sm btn-success" title="Mark Won">🎉 Won</button>
+            </form>
+            <form action="/deals/{{ d.id }}/close" method="post" class="d-inline">
+              <input type="hidden" name="won" value="false">
+              <button class="btn btn-sm btn-outline-danger" title="Mark Lost">Lost</button>
+            </form>
+            {% else %}
+            <span class="text-muted">{{ d.closed_at[:10] if d.closed_at else '' }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No deals yet. Add one from a contact's page.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
